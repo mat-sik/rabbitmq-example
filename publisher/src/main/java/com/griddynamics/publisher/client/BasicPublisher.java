@@ -57,19 +57,23 @@ public class BasicPublisher {
     }
 
     public static void publishStringMessage(Channel channel, String message) throws IOException {
+        boolean mandatory = true;
         channel.basicPublish(
                 EXCHANGE_NAME,
                 ROUTING_KEY,
-                true, // mandatory
+                mandatory,
                 MessageProperties.PERSISTENT_TEXT_PLAIN,
                 message.getBytes(StandardCharsets.UTF_8)
         );
     }
 
     public static void ensureQuorumQueue(Channel channel) throws IOException {
-        channel.exchangeDeclare(EXCHANGE_NAME, BuiltinExchangeType.DIRECT, true); // durable
-        // durable, non-exclusive, non-auto-delete, quorum queue
-        channel.queueDeclare(QUEUE_NAME, true, false, false, Map.of("x-queue-type", "quorum"));
+        boolean durable = true;
+        channel.exchangeDeclare(EXCHANGE_NAME, BuiltinExchangeType.DIRECT, durable);
+
+        boolean exclusive = false;
+        boolean autoDelete = false;
+        channel.queueDeclare(QUEUE_NAME, durable, exclusive, autoDelete, Map.of("x-queue-type", "quorum"));
         channel.queueBind(QUEUE_NAME, EXCHANGE_NAME, ROUTING_KEY);
     }
 
