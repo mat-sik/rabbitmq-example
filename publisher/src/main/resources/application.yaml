@@ -1,1 +1,12 @@
-spring.application.name=publisher
+spring:
+  application:
+    name: publisher
+
+rabbit:
+  user: admin
+  password: xoxo
+  virtualHost: /
+  nodeAddresses:
+    - localhost:5672
+    - localhost:5673
+    - localhost:5674
