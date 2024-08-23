@@ -1,0 +1,12 @@
+spring:
+  application:
+    name: consumer
+
+rabbit:
+  user: admin
+  password: xoxo
+  virtualHost: /
+  nodeAddresses:
+    - localhost:5672
+    - localhost:5673
+    - localhost:5674
