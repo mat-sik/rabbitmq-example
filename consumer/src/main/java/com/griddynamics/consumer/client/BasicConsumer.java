@@ -51,8 +51,7 @@ public class BasicConsumer {
                         boolean isRedeliver = envelope.isRedeliver();
 
                         // Retrieve the custom header from the properties
-                        Map<String, Object> headers = properties.getHeaders();
-                        Boolean isPublisherRedelivery = headers != null ? (Boolean) headers.get(PUBLISHER_REDELIVERY_HEADER) : null;
+                        boolean isPublisherRedelivery = isPublisherRedelivery(properties);
 
                         // Acknowledge the message
                         boolean multiple = false;
@@ -63,6 +62,11 @@ public class BasicConsumer {
                                 routingKey, contentType, deliveryTag, isRedeliver, isPublisherRedelivery, new String(body, StandardCharsets.UTF_8));
                     }
                 });
+    }
+
+    public static boolean isPublisherRedelivery(AMQP.BasicProperties properties) {
+        Map<String, Object> headers = properties.getHeaders();
+        return headers != null && headers.containsKey(PUBLISHER_REDELIVERY_HEADER);
     }
 
     public static void ensureQuorumQueue(Channel channel) throws IOException {
