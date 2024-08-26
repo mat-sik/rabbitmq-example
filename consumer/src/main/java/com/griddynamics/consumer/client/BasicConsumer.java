@@ -46,8 +46,9 @@ public class BasicConsumer {
                         String routingKey = envelope.getRoutingKey();
                         String contentType = properties.getContentType();
                         long deliveryTag = envelope.getDeliveryTag();
-                        boolean multiMessage = false;
-                        channel.basicAck(deliveryTag, multiMessage);
+
+                        boolean multiple = false;
+                        channel.basicAck(deliveryTag, multiple);
 
                         LOGGER.info("Received message with routing key: {}, content type: {}, delivery tag: {}, body: {}",
                                 routingKey, contentType, deliveryTag, new String(body, StandardCharsets.UTF_8));
