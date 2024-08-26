@@ -4,7 +4,6 @@ import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.BuiltinExchangeType;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
-import com.rabbitmq.client.MessageProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -22,9 +21,9 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.function.Function;
 
 @Component
-public class BasicPublisher {
+public class ContinuousPublisher {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(BasicPublisher.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ContinuousPublisher.class);
 
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
@@ -41,7 +40,7 @@ public class BasicPublisher {
 
     private final Connection connection;
 
-    public BasicPublisher(Connection connection) {
+    public ContinuousPublisher(Connection connection) {
         this.connection = connection;
         this.outstandingConfirms = new ConcurrentSkipListMap<>();
         this.toPublish = new ConcurrentLinkedQueue<>();

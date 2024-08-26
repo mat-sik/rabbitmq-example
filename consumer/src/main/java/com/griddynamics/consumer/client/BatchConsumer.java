@@ -13,9 +13,9 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
 
-public class MyCustomConsumer extends DefaultConsumer {
+public class BatchConsumer extends DefaultConsumer {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(MyCustomConsumer.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(BatchConsumer.class);
 
     private static final String PUBLISHER_REDELIVERY_HEADER = "x-publisher-redelivery";
     private static final int ACK_THRESHOLD = 10;
@@ -28,7 +28,7 @@ public class MyCustomConsumer extends DefaultConsumer {
     private final Semaphore mutex;
     private boolean isTimedFlushRunning;
 
-    public MyCustomConsumer(Channel channel) {
+    public BatchConsumer(Channel channel) {
         super(channel);
         this.ackCounter = 0;
         this.currentDeliveryTag = -1;

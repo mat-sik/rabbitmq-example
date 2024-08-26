@@ -1,11 +1,10 @@
 package com.griddynamics.consumer;
 
-import com.griddynamics.consumer.client.BasicConsumer;
+import com.griddynamics.consumer.client.ContinuousConsumer;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 
 @SpringBootApplication
@@ -17,7 +16,7 @@ public class ConsumerApplication {
 	}
 
 	@Bean
-	public CommandLineRunner commandLineRunner(BasicConsumer consumer) {
+	public CommandLineRunner commandLineRunner(ContinuousConsumer consumer) {
 		return args -> {
 			consumer.continuousConsume();
 		};
