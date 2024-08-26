@@ -66,7 +66,18 @@ public class BasicConsumer {
 
     public static boolean isPublisherRedelivery(AMQP.BasicProperties properties) {
         Map<String, Object> headers = properties.getHeaders();
-        return headers != null && headers.containsKey(PUBLISHER_REDELIVERY_HEADER);
+        if (headers == null) {
+            throw new RuntimeException("for some reason headers are null");
+        }
+        Object value = headers.get(PUBLISHER_REDELIVERY_HEADER);
+        if (value == null) {
+            throw new RuntimeException("failed to parse header value");
+        }
+        if (value instanceof Boolean isPublisherRedelivery) {
+            return isPublisherRedelivery;
+        } else {
+            throw new RuntimeException("failed to parse header value");
+        }
     }
 
     public static void ensureQuorumQueue(Channel channel) throws IOException {
