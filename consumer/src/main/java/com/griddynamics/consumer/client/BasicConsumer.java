@@ -23,6 +23,8 @@ public class BasicConsumer {
     private static final String QUEUE_NAME = "queue-direct";
     private static final String ROUTING_KEY = "all";
 
+    private static final String PUBLISHER_REDELIVERY_HEADER = "x-publisher-redelivery";
+
     private final Connection connection;
 
     public BasicConsumer(Connection connection) {
@@ -46,12 +48,19 @@ public class BasicConsumer {
                         String routingKey = envelope.getRoutingKey();
                         String contentType = properties.getContentType();
                         long deliveryTag = envelope.getDeliveryTag();
+                        boolean isRedeliver = envelope.isRedeliver();
 
+                        // Retrieve the custom header from the properties
+                        Map<String, Object> headers = properties.getHeaders();
+                        Boolean isPublisherRedelivery = headers != null ? (Boolean) headers.get(PUBLISHER_REDELIVERY_HEADER) : null;
+
+                        // Acknowledge the message
                         boolean multiple = false;
                         channel.basicAck(deliveryTag, multiple);
 
-                        LOGGER.info("Received message with routing key: {}, content type: {}, delivery tag: {}, body: {}",
-                                routingKey, contentType, deliveryTag, new String(body, StandardCharsets.UTF_8));
+                        // Log message details including the custom header
+                        LOGGER.info("Received message with routing key: {}, content type: {}, delivery tag: {}, redelivered: {}, isPublisherRedelivery: {}, body: {}",
+                                routingKey, contentType, deliveryTag, isRedeliver, isPublisherRedelivery, new String(body, StandardCharsets.UTF_8));
                     }
                 });
     }
