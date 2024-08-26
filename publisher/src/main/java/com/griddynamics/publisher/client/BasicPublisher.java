@@ -19,6 +19,7 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.function.Function;
 
 @Component
 public class BasicPublisher {
@@ -36,7 +37,7 @@ public class BasicPublisher {
     private static final String PUBLISHER_REDELIVERY_HEADER = "x-publisher-redelivery";
 
     private final Queue<Message> toPublish;
-    private final ConcurrentNavigableMap<Long, String> outstandingConfirms;
+    private final ConcurrentNavigableMap<Long, byte[]> outstandingConfirms;
 
     private final Connection connection;
 
@@ -51,9 +52,11 @@ public class BasicPublisher {
 
         for (; ; ) {
             String dateTimeString = getCurrentDateTimeAsString();
-            boolean isPublisherRedelivery = false;
 
-            toPublish.add(new Message(dateTimeString, isPublisherRedelivery));
+            byte[] payload = dateTimeString.getBytes(StandardCharsets.UTF_8);
+            Message initialMessage = Message.MessageFactory.newInitialMessage(payload);
+
+            toPublish.add(initialMessage);
 
             publishStringMessage(channel);
             Thread.sleep(RATE.toMillis());
@@ -62,8 +65,7 @@ public class BasicPublisher {
 
     public void publishStringMessage(Channel channel) throws IOException {
         Message message = toPublish.poll();
-        String payload = message.payload();
-        byte[] payloadBytes = message.payload().getBytes(StandardCharsets.UTF_8);
+        byte[] payload = message.payload();
         boolean isPublisherRedelivery = message.isPublisherRedelivery();
 
         long sequenceNumber = channel.getNextPublishSeqNo();
@@ -77,7 +79,7 @@ public class BasicPublisher {
                 ROUTING_KEY,
                 mandatory,
                 properties,
-                payloadBytes
+                payload
         );
     }
 
@@ -91,38 +93,13 @@ public class BasicPublisher {
                 .build();
     }
 
-    public void republishMessages(long sequenceNumber, boolean multiple) {
-        boolean isPublisherRedelivery = true;
-        if (multiple) {
-            ConcurrentNavigableMap<Long, String> nacked = outstandingConfirms.headMap(
-                    sequenceNumber, true
-            );
-            nacked.forEach((_, value) -> toPublish.add(new Message(value, isPublisherRedelivery)));
-        } else {
-            toPublish.add(new Message(outstandingConfirms.get(sequenceNumber), isPublisherRedelivery));
-        }
-    }
-
-    public void cleanOutstandingConfirms(long sequenceNumber, boolean multiple) {
-        if (multiple) { // This is true, if all sequenceNumbers until this one were acked.
-            ConcurrentNavigableMap<Long, String> confirmed = outstandingConfirms.headMap(
-                    sequenceNumber, true
-            );
-            confirmed.clear();
-        } else {
-            outstandingConfirms.remove(sequenceNumber);
-        }
-    }
-
     public Channel initChannel() throws IOException {
         Channel channel = connection.createChannel();
         channel.confirmSelect();
         channel.addConfirmListener((sequenceNumber, multiple) -> {
-            // code when message is confirmed
             cleanOutstandingConfirms(sequenceNumber, multiple);
             LOGGER.info("Message with sequenceNumber: {} was confirmed. Multiple: {}", sequenceNumber, multiple);
         }, (sequenceNumber, multiple) -> {
-            // code when message is nack-ed
             republishMessages(sequenceNumber, multiple);
             LOGGER.info("Message with sequenceNumber: {} was nack-ed. Multiple: {}", sequenceNumber, multiple);
         });
@@ -130,6 +107,33 @@ public class BasicPublisher {
         ensureQuorumQueue(channel);
 
         return channel;
+    }
+
+    public void republishMessages(long sequenceNumber, boolean multiple) {
+        Function<byte[], Message> newRedeliveryMessage = Message.MessageFactory::newRedeliveryMessage;
+
+        if (multiple) {
+            boolean inclusive = true;
+            ConcurrentNavigableMap<Long, byte[]> nacked = outstandingConfirms.headMap(
+                    sequenceNumber, inclusive
+            );
+            nacked.forEach((_, redeliveryPayload) -> toPublish.add(newRedeliveryMessage.apply(redeliveryPayload)));
+        } else {
+            byte[] redeliveryPayload = outstandingConfirms.get(sequenceNumber);
+            toPublish.add(newRedeliveryMessage.apply(redeliveryPayload));
+        }
+    }
+
+    public void cleanOutstandingConfirms(long sequenceNumber, boolean multiple) {
+        if (multiple) { // This is true, if all sequenceNumbers until this one were acked.
+            boolean inclusive = true;
+            ConcurrentNavigableMap<Long, byte[]> confirmed = outstandingConfirms.headMap(
+                    sequenceNumber, inclusive
+            );
+            confirmed.clear();
+        } else {
+            outstandingConfirms.remove(sequenceNumber);
+        }
     }
 
     public static void ensureQuorumQueue(Channel channel) throws IOException {
