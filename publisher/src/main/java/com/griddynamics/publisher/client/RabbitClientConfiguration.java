@@ -8,13 +8,23 @@ import org.springframework.context.annotation.Configuration;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
 
 @Configuration
 public class RabbitClientConfiguration {
 
     @Bean
-    public Connection rabbitMqConnection(RabbitClientProperties properties) throws IOException, TimeoutException {
+    public ExecutorService virtualExecutorService() {
+        return Executors.newVirtualThreadPerTaskExecutor();
+    }
+
+    @Bean
+    public Connection rabbitMqConnection(
+            RabbitClientProperties properties,
+            ExecutorService executorService
+    ) throws IOException, TimeoutException {
         var factory = new ConnectionFactory();
 
         String user = properties.user();
@@ -29,7 +39,7 @@ public class RabbitClientConfiguration {
         List<String> nodeAddresses = properties.nodeAddresses();
         List<Address> addresses = getAddresses(nodeAddresses);
 
-        return factory.newConnection(addresses, "publisher-client");
+        return factory.newConnection(executorService, addresses, "consumer-client");
     }
 
     private static List<Address> getAddresses(List<String> hostnames) {
