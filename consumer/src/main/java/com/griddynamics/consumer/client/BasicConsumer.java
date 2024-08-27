@@ -27,11 +27,13 @@ public class BasicConsumer extends DefaultConsumer {
         String routingKey = envelope.getRoutingKey();
         String contentType = properties.getContentType();
         long deliveryTag = envelope.getDeliveryTag();
-        boolean multiMessage = false;
-        getChannel().basicAck(deliveryTag, multiMessage);
+        boolean isRedeliver = envelope.isRedeliver();
 
-        LOGGER.info("Received message with routing key: {}, content type: {}, delivery tag: {}, body: {}",
-                routingKey, contentType, deliveryTag, new String(body, StandardCharsets.UTF_8));
+        boolean multiple = false;
+        getChannel().basicAck(deliveryTag, multiple);
+
+        LOGGER.info("Received message with routing key: {}, content type: {}, delivery tag: {}, redelivered: {}, body: {}",
+                routingKey, contentType, deliveryTag, isRedeliver, new String(body, StandardCharsets.UTF_8));
     }
 
 }
