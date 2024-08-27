@@ -1,6 +1,6 @@
 package com.griddynamics.publisher;
 
-import com.griddynamics.publisher.client.BasicPublisher;
+import com.griddynamics.publisher.client.ContinuousPublisher;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -16,7 +16,7 @@ public class PublisherApplication {
     }
 
     @Bean
-    public CommandLineRunner commandLineRunner(BasicPublisher publisher) {
+    public CommandLineRunner commandLineRunner(ContinuousPublisher publisher) {
         return args -> {
             publisher.continuousPublish();
         };

@@ -1,5 +1,6 @@
 package com.griddynamics.publisher.client;
 
+import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.BuiltinExchangeType;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
@@ -16,9 +17,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.Map;
 
 @Component
-public class BasicPublisher {
+public class ContinuousPublisher {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(BasicPublisher.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ContinuousPublisher.class);
 
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
@@ -30,41 +31,53 @@ public class BasicPublisher {
 
     private final Connection connection;
 
-    public BasicPublisher(Connection connection) {
+    public ContinuousPublisher(Connection connection) {
         this.connection = connection;
     }
 
-    public void continuousPublish() throws IOException {
-        Channel channel = connection.createChannel();
-        channel.confirmSelect();
-
-        ensureQuorumQueue(channel);
-
-        while (true) {
+    public void continuousPublish() throws IOException, InterruptedException {
+        Channel channel = initChannel();
+        for (; ; ) {
             String dateTimeString = getCurrentDateTimeAsString();
             publishStringMessage(channel, dateTimeString);
-
-            try {
-                boolean ok = channel.waitForConfirms();
-                if (!ok) {
-                    LOGGER.error("Message has not been acked by broker.");
-                }
-                Thread.sleep(RATE.toMillis());
-            } catch (InterruptedException ex) {
-                LOGGER.error("Thread go interrupted during either waiting for ack or sleeping.");
-            }
+            Thread.sleep(RATE.toMillis());
         }
     }
 
     public static void publishStringMessage(Channel channel, String message) throws IOException {
+        byte[] payload = message.getBytes(StandardCharsets.UTF_8);
         boolean mandatory = true;
+        AMQP.BasicProperties properties = getProperties();
         channel.basicPublish(
                 EXCHANGE_NAME,
                 ROUTING_KEY,
                 mandatory,
-                MessageProperties.PERSISTENT_TEXT_PLAIN,
-                message.getBytes(StandardCharsets.UTF_8)
+                properties,
+                payload
         );
+    }
+
+    private static AMQP.BasicProperties getProperties() {
+        int persistentDeliveryMode = 2;
+        int noPriority = 0;
+        return new AMQP.BasicProperties.Builder()
+                .deliveryMode(persistentDeliveryMode)
+                .priority(noPriority)
+                .build();
+    }
+
+    public Channel initChannel() throws IOException {
+        Channel channel = connection.createChannel();
+        channel.confirmSelect();
+        channel.addConfirmListener((sequenceNumber, multiple) -> {
+            LOGGER.info("Message with sequenceNumber: {} was confirmed. Multiple: {}", sequenceNumber, multiple);
+        }, (sequenceNumber, multiple) -> {
+            LOGGER.info("Message with sequenceNumber: {} was nack-ed. Multiple: {}", sequenceNumber, multiple);
+        });
+
+        ensureQuorumQueue(channel);
+
+        return channel;
     }
 
     public static void ensureQuorumQueue(Channel channel) throws IOException {
