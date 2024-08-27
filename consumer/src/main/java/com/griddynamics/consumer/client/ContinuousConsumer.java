@@ -15,9 +15,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 @Component
-public class BasicConsumer {
+public class ContinuousConsumer {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(BasicConsumer.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ContinuousConsumer.class);
 
     private static final String EXCHANGE_NAME = "exchange-direct";
     private static final String QUEUE_NAME = "queue-direct";
@@ -25,7 +25,7 @@ public class BasicConsumer {
 
     private final Connection connection;
 
-    public BasicConsumer(Connection connection) {
+    public ContinuousConsumer(Connection connection) {
         this.connection = connection;
     }
 
