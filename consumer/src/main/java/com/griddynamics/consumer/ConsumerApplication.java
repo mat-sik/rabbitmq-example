@@ -11,14 +11,14 @@ import org.springframework.context.annotation.Bean;
 @ConfigurationPropertiesScan
 public class ConsumerApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(ConsumerApplication.class, args);
-	}
+    public static void main(String[] args) {
+        SpringApplication.run(ConsumerApplication.class, args);
+    }
 
-	@Bean
-	public CommandLineRunner commandLineRunner(ContinuousConsumer consumer) {
-		return args -> {
-			consumer.continuousConsume();
-		};
-	}
+    @Bean
+    public CommandLineRunner commandLineRunner(ContinuousConsumer consumer) {
+        return args -> {
+            consumer.continuousConsume();
+        };
+    }
 }

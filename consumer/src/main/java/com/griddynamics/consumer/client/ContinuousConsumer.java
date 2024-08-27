@@ -1,23 +1,15 @@
 package com.griddynamics.consumer.client;
 
-import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.BuiltinExchangeType;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
-import com.rabbitmq.client.DefaultConsumer;
-import com.rabbitmq.client.Envelope;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 @Component
 public class ContinuousConsumer {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(ContinuousConsumer.class);
 
     private static final String EXCHANGE_NAME = "exchange-direct";
     private static final String QUEUE_NAME = "queue-direct";
@@ -35,24 +27,7 @@ public class ContinuousConsumer {
         ensureQuorumQueue(channel);
 
         boolean autoAck = false;
-        channel.basicConsume(QUEUE_NAME, autoAck,
-                new DefaultConsumer(channel) {
-                    @Override
-                    public void handleDelivery(String consumerTag,
-                                               Envelope envelope,
-                                               AMQP.BasicProperties properties,
-                                               byte[] body)
-                            throws IOException {
-                        String routingKey = envelope.getRoutingKey();
-                        String contentType = properties.getContentType();
-                        long deliveryTag = envelope.getDeliveryTag();
-                        boolean multiMessage = false;
-                        channel.basicAck(deliveryTag, multiMessage);
-
-                        LOGGER.info("Received message with routing key: {}, content type: {}, delivery tag: {}, body: {}",
-                                routingKey, contentType, deliveryTag, new String(body, StandardCharsets.UTF_8));
-                    }
-                });
+        channel.basicConsume(QUEUE_NAME, autoAck, new BasicConsumer(channel));
     }
 
     public static void ensureQuorumQueue(Channel channel) throws IOException {
