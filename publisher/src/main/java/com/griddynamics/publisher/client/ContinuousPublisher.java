@@ -102,6 +102,16 @@ public class ContinuousPublisher {
             republishMessages(sequenceNumber, multiple);
             LOGGER.info("Message with sequenceNumber: {} was nack-ed. Multiple: {}", sequenceNumber, multiple);
         });
+        channel.addReturnListener((replyCode, replyText, exchange, routingKey, properties, body) -> {
+            LOGGER.info("Message returned. Reply Code: {}, Reply Text: {}, Exchange: {}, Routing Key: {}, Properties: {}, Body: {}",
+                    replyCode,  // the code indicating why the message was returned
+                    replyText,  // the human-readable reason for the return
+                    exchange,   // the exchange to which the message was sent
+                    routingKey, // the routing key used in the attempt to route the message
+                    properties, // the AMQP properties of the message
+                    new String(body) // the body of the message, converted to a string
+            );
+        });
 
         ensureQuorumQueue(channel);
 
