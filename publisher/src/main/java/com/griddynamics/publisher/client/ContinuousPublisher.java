@@ -22,16 +22,18 @@ public class ContinuousPublisher {
 
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    private static final Duration RATE = Duration.ofSeconds(10);
-
-    private static final String EXCHANGE_NAME = "exchange-direct";
-    private static final String QUEUE_NAME = "queue-direct";
-    private static final String ROUTING_KEY = "all";
+    private static final Duration RATE = Duration.ofMillis(100);
 
     private final Connection connection;
+    private final String exchangeName;
+    private final String queueName;
+    private final String routingKey;
 
-    public ContinuousPublisher(Connection connection) {
+    public ContinuousPublisher(Connection connection, RabbitTopologyProperties topologyProperties) {
         this.connection = connection;
+        this.exchangeName = topologyProperties.exchangeName();
+        this.queueName = topologyProperties.queueName();
+        this.routingKey = topologyProperties.routingKey();
     }
 
     public void continuousPublish() throws IOException, InterruptedException {
@@ -43,13 +45,13 @@ public class ContinuousPublisher {
         }
     }
 
-    public static void publishStringMessage(Channel channel, String message) throws IOException {
+    public void publishStringMessage(Channel channel, String message) throws IOException {
         byte[] payload = message.getBytes(StandardCharsets.UTF_8);
         boolean mandatory = true;
         AMQP.BasicProperties properties = getProperties();
         channel.basicPublish(
-                EXCHANGE_NAME,
-                ROUTING_KEY,
+                exchangeName,
+                routingKey,
                 mandatory,
                 properties,
                 payload
@@ -79,14 +81,14 @@ public class ContinuousPublisher {
         return channel;
     }
 
-    public static void ensureQuorumQueue(Channel channel) throws IOException {
+    public void ensureQuorumQueue(Channel channel) throws IOException {
         boolean durable = true;
-        channel.exchangeDeclare(EXCHANGE_NAME, BuiltinExchangeType.DIRECT, durable);
+        channel.exchangeDeclare(exchangeName, BuiltinExchangeType.DIRECT, durable);
 
         boolean exclusive = false;
         boolean autoDelete = false;
-        channel.queueDeclare(QUEUE_NAME, durable, exclusive, autoDelete, Map.of("x-queue-type", "quorum"));
-        channel.queueBind(QUEUE_NAME, EXCHANGE_NAME, ROUTING_KEY);
+        channel.queueDeclare(queueName, durable, exclusive, autoDelete, Map.of("x-queue-type", "quorum"));
+        channel.queueBind(queueName, exchangeName, routingKey);
     }
 
     private String getCurrentDateTimeAsString() {
