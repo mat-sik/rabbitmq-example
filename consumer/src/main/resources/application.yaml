@@ -10,3 +10,8 @@ rabbit:
     - localhost:5672
     - localhost:5673
     - localhost:5674
+  topology:
+    basic:
+      exchangeName: exchange-direct
+      queueName: queue-direct
+      routingKey: all
